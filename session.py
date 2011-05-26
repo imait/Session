@@ -6,6 +6,8 @@ This module provides class that manage http session.
 Classes:
     Session -- class to provide http session with SQLite3
 """
+__author__ =  'IMAI Toshiyuki'
+__version__=  '1.0'
 
 import os
 import datetime
