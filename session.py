@@ -3,6 +3,13 @@
 
 This module provides class that manage http session.
 
+Author: 2011 IMAI Toshiyuki
+
+Copyright (c) 2011 IMAI Toshiyuki
+
+This software is released under the MIT License.
+http://opensource.org/licenses/mit-license.php
+
 Classes:
     Session -- class to provide http session with SQLite3
 """
