@@ -4,12 +4,12 @@ The module *session.py* includes a class *Session*, which provaides http session
 
 ## Supported Python version
 
-Python 2.x
+Python 3.x
 
 ## Author
 
 * IMAI Toshiyuki
 
-Copyright (c) 2011 IMAI Toshiyuki
+Copyright (c) 2011, 2017 IMAI Toshiyuki
 
 This software is released under the MIT License, see LICENSE.

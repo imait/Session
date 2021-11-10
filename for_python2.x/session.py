@@ -1,11 +1,11 @@
 # -*- coding: utf-8-unix; mode: python -*-
-"""Module to provide session with SQLite3 for python 3.
+"""Module to provide session with SQLite3.
 
 This module provides class that manage http session.
 
-Author: 2011, 2017 IMAI Toshiyuki
+Author: 2011 IMAI Toshiyuki
 
-Copyright (c) 2011, 2017 IMAI Toshiyuki
+Copyright (c) 2011 IMAI Toshiyuki
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
@@ -23,7 +23,7 @@ import random
 import hashlib
 import sqlite3
 import pickle
-import bz2
+import base64
 
 class Session:
 
@@ -51,20 +51,19 @@ class Session:
         vacuum() -- maintain SQLite database file
 
     Useage:
-        from http import cookies
-        import os
+        import Cookie
         import Session
 
-        cookie = cookies.SimpleCookie(os.environ.get('HTTP_COOKIE', ''))
-        if 'session_cookie' in cookie:
-            sesid = cookie['session_cookie'].value
+        cookie = Cookie.SimpleCookie(os.environ.get(u'HTTP_COOKIE', u''))
+        if cookie.has_key(u'session_cookie'):
+            sesid = cookie[u'session_cookie'].value
         else:
             sesid = None
-        mysession = session.Session(dbpath='./databese/filename.sqlite3',
-                                    sid=sesid,
-                                    validity='30 minutes',
-                                    ipmatch=True)
-        if sesid == mysession.get_id():
+        session = session.Session(dbpath='./databese/filename.sqlite3',
+                                  sid=sesid,
+                                  validity='30 minutes',
+                                  ipmatch=True)
+        if sesid == session.get_id():
             # valid session
             ...
         else:
@@ -72,7 +71,7 @@ class Session:
             ...
     """
 
-    def __init__(self, dbpath, sid=None, validity='3 hours', ipmatch=False):
+    def __init__(self, dbpath, sid=None, validity=u'3 hours', ipmatch=False):
 
         """Constructor of class Session.
         
@@ -104,7 +103,7 @@ class Session:
         cursor = connection.cursor()
         cursor.execute('SELECT * FROM sqlite_master \
         WHERE type = \'table\' AND name = ?;',
-                       ('sessions',))
+                       (u'sessions',))
         tablecount = cursor.fetchall()
         if len(tablecount) == 0:
             cursor.execute('CREATE TABLE sessions (id PRIMARY KEY, data, \
@@ -113,7 +112,7 @@ class Session:
         cursor.execute('DELETE FROM sessions \
         WHERE expire_time < datetime(\'now\');')
 
-        if isinstance(self.sid, str):
+        if isinstance(self.sid, basestring):
             cursor.execute('SELECT id FROM sessions WHERE id = ?;',
                            (self.sid,))
             idcount = cursor.fetchall()
@@ -122,7 +121,7 @@ class Session:
                 self._insert_session_record(cursor)
             else:
                 if self.ipmatch:
-                    current_addr = os.environ.get('REMOTE_ADDR', '')
+                    current_addr = os.environ.get('REMOTE_ADDR', u'')
                     past_addr = self.get_remote_addr()
                     if current_addr == past_addr:
                         self._update_session_record(cursor)
@@ -199,7 +198,7 @@ class Session:
             if data is not None:
                 data = data[0]
             if data is not None:
-                self.data = pickle.loads(bz2.decompress(data))
+                self.data = pickle.loads(base64.decodestring(data))
         return self.data
 
 
@@ -215,7 +214,7 @@ class Session:
         """Save data on session to SQLite database."""
         data = self.data
         if data is not None:
-            data = bz2.compress(pickle.dumps(data))
+            data = base64.encodestring(pickle.dumps(data))
             connection = self._open_db()
             cursor = connection.cursor()
             cursor.execute('UPDATE sessions SET data = ? WHERE id = ?;',
@@ -238,7 +237,7 @@ class Session:
         """Maintain SQLite database file."""
         connection = self._open_db()
         cursor = connection.cursor()
-        cursor.execute('vacuum;')
+        cursor.execute(u'vacuum;')
         cursor.close()
         connection.close()
 
@@ -253,11 +252,11 @@ class Session:
         cursor = connection.cursor()
         while True:
             now = datetime.datetime.today()
-            seed = '{0}{1}{2}'.format(str(os.getpid()),
-                                      str(now.isoformat()),
-                                      str(random.randint(0, sys.maxsize - 1)))
+            seed = u'%s%s%s' % (str(os.getpid()),
+                                str(now.isoformat()),
+                                str(random.randint(0, sys.maxint - 1)))
             message = hashlib.new('sha256')
-            message.update(seed.encode('utf-8'))
+            message.update(seed)
             sid = message.hexdigest()
             cursor.execute('SELECT id FROM sessions WHERE id = ?;',
                            (sid,))
@@ -274,12 +273,12 @@ class Session:
         datetime(\'now\'), datetime(\'now\', ?), ?);',
                        (self.sid,
                         self.validity,
-                        os.environ.get('REMOTE_ADDR', '')))
+                        os.environ.get('REMOTE_ADDR', u'')))
 
     def _update_session_record(self, cursor):
         cursor.execute('UPDATE sessions SET accessed_time = datetime(\'now\'), \
         expire_time = datetime(\'now\', ?), remote_addr = ? \
         where id = ?;', \
                        (self.validity,
-                        os.environ.get('REMOTE_ADDR', ''),
+                        os.environ.get('REMOTE_ADDR', u''),
                         self.sid))
