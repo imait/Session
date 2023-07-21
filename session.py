@@ -198,7 +198,7 @@ class Session:
             data = cursor.fetchone()
             if data is not None:
                 data = data[0]
-            if data is not None or data != '':
+            if data is not None:
                 self.data = pickle.loads(bz2.decompress(data))
         return self.data
 
